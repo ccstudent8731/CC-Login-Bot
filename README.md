@@ -4,7 +4,7 @@ Automates daily check-in/out on the CC portal using Playwright. The bot logs in,
 
 ### Hostname Requirement
 - You **must** provide the portal hostname via `--host` (CLI) or `CC_HOSTNAME` (Docker).  
-- Unsure which hostname to use? See the community hints at: https://pastebin.com/search?q=bot+hostname+cc
+- Unsure which hostname to use? See the community hints at: [Pastebin](https://pastebin.com/search?q=bot+hostname+cc)
 
 ### Build or Pull
 - Build locally: `docker build -t cc-login-bot:0.0.1 .`
@@ -42,3 +42,4 @@ python -m src.cli \
 
 ### License
 This project is released under the MIT License. See `LICENSE` for details.
+
