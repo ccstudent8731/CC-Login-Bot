@@ -79,6 +79,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Führt vor dem Start eine zufällige Verzögerung aus",
     )
     parser.add_argument(
+        "--timezone",
+        default="UTC",
+        help="Zeitzone für Zeitberechnungen (z.B. UTC, Europe/Berlin, CET)",
+    )
+    parser.add_argument(
         "--log-level",
         default="INFO",
         help="Logging-Level (z. B. INFO, DEBUG)",
@@ -138,14 +143,32 @@ async def _apply_variation_if_needed(args: argparse.Namespace) -> None:
     base_time = _parse_time(scheduled_str)
     variation = max(0, args.variation_minutes)
 
-    wait_minutes = random.randint(0, variation * 2)
-    wait_seconds = wait_minutes * 60 + random.randint(0, 59)
+    # Berechne die geplante Zeit mit Zeitzone
+    from src.bot import calculate_scheduled_time
+    scheduled_time = calculate_scheduled_time(
+        base_time, 
+        variation_minutes=variation, 
+        timezone=args.timezone
+    )
+    
+    # Berechne Wartezeit bis zur geplanten Zeit
+    import zoneinfo
+    try:
+        tz = zoneinfo.ZoneInfo(args.timezone)
+    except zoneinfo.ZoneInfoNotFoundError:
+        logging.warning("Zeitzone %s nicht gefunden, verwende UTC", args.timezone)
+        tz = zoneinfo.ZoneInfo("UTC")
+    
+    now = dt.datetime.now(tz)
+    wait_seconds = max(0, int((scheduled_time - now).total_seconds()))
 
     logging.info(
-        "Starte Verzögerung für Modus %s: Basis %s, Variation ±%s Minuten, gewartet %s Sekunden",
+        "Starte Verzögerung für Modus %s: Basis %s (%s), Variation ±%s Minuten, geplante Zeit %s, gewartet %s Sekunden",
         args.mode,
         base_time.strftime("%H:%M"),
+        args.timezone,
         variation,
+        scheduled_time.strftime("%H:%M:%S"),
         wait_seconds,
     )
     if wait_seconds > 0:
@@ -173,6 +196,7 @@ async def async_main(args: argparse.Namespace) -> int:
         base_url=f"https://{args.host}",
         headless=args.headless,
         timeout=args.timeout,
+        timezone=args.timezone,
     )
 
     success, status_text = await safe_run(run_config)

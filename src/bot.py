@@ -89,6 +89,7 @@ class RunConfig:
     base_url: str
     headless: bool = True
     timeout: float = 30.0
+    timezone: str = "UTC"
 
 
 WINDOWS_EDGE_UA = (
@@ -513,20 +514,30 @@ async def run_with_timeout(config: RunConfig, max_duration: float = 90.0) -> str
 
 
 def calculate_scheduled_time(
-    base_time: dt.time, *, variation_minutes: int = 2, seed: Optional[int] = None
+    base_time: dt.time, *, variation_minutes: int = 2, seed: Optional[int] = None, timezone: str = "UTC"
 ) -> dt.datetime:
     """Berechne eine geplante Zeit heute mit Zufallsvariation."""
 
     if seed is not None:
         random.seed(seed)
 
-    now = dt.datetime.now()
-    target = dt.datetime.combine(now.date(), base_time)
+    # Zeitzone konfigurieren
+    import zoneinfo
+    try:
+        tz = zoneinfo.ZoneInfo(timezone)
+    except zoneinfo.ZoneInfoNotFoundError:
+        logging.warning("Zeitzone %s nicht gefunden, verwende UTC", timezone)
+        tz = zoneinfo.ZoneInfo("UTC")
+
+    now = dt.datetime.now(tz)
+    target = dt.datetime.combine(now.date(), base_time, tz)
     delta_minutes = random.randint(-variation_minutes, variation_minutes)
     result = target + dt.timedelta(minutes=delta_minutes)
+    
     logging.debug(
-        "Berechnete Zielzeit %s aus Basis %s mit Variation %s Minuten",
+        "Berechnete Zielzeit %s (%s) aus Basis %s mit Variation %s Minuten",
         result,
+        timezone,
         base_time,
         delta_minutes,
     )

@@ -39,6 +39,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Deaktiviert Zufallsverzögerung innerhalb des CLI",
     )
+    parser.add_argument(
+        "--timezone",
+        default="UTC",
+        help="Zeitzone für Zeitberechnungen (z.B. UTC, Europe/Berlin, CET)",
+    )
     return parser
 
 
@@ -53,6 +58,7 @@ def write_cron_file(
     workdays: str,
     log_file: str,
     enable_variation: bool,
+    timezone: str = "UTC",
 ) -> None:
     cron_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -75,6 +81,7 @@ def write_cron_file(
         log_file,
         enable_variation,
         start_trigger,
+        timezone,
     )
     stop_cmd = _build_cron_command(
         python_bin,
@@ -87,6 +94,7 @@ def write_cron_file(
         log_file,
         enable_variation,
         end_trigger,
+        timezone,
     )
 
     cron_lines.extend([start_cmd, stop_cmd, ""])
@@ -108,6 +116,7 @@ def _build_cron_command(
     log_file: str,
     enable_variation: bool,
     trigger_time: str,
+    timezone: str = "UTC",
 ) -> str:
     hour, minute = trigger_time.split(":")
     cron_schedule = f"{minute} {hour} * * {workdays}"
@@ -132,6 +141,8 @@ def _build_cron_command(
         cred_args["end_time"],
         "--variation-minutes",
         str(variation),
+        "--timezone",
+        timezone,
     ])
 
     if enable_variation:
@@ -178,6 +189,7 @@ def main(argv: list[str] | None = None) -> int:
         args.workdays,
         args.log_file,
         not args.disable_variation,
+        args.timezone,
     )
 
     logging.info("Starte Cron im Vordergrund")

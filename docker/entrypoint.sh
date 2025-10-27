@@ -1,6 +1,10 @@
 #!/bin/sh
 set -eu
 
+# Zeitzone konfigurieren (Standard: UTC)
+export TZ="${CC_TIMEZONE:-UTC}"
+echo "[*] Zeitzone gesetzt auf: $TZ"
+
 echo "[*] Prüfe Playwright-Browserinstallation"
 if ! playwright show-browsers 2>/dev/null | grep -q chromium; then
   playwright install chromium
@@ -32,5 +36,6 @@ python -m src.scheduler \
   ${CC_START_TIME:+--start-time "$CC_START_TIME"} \
   ${CC_END_TIME:+--end-time "$CC_END_TIME"} \
   ${CC_VARIATION_MINUTES:+--variation-minutes "$CC_VARIATION_MINUTES"} \
+  ${CC_TIMEZONE:+--timezone "$CC_TIMEZONE"} \
   ${CC_DISABLE_VARIATION:+--disable-variation}
 
