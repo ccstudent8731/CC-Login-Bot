@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+env/
+venv/
+.venv/
+
+# IDE / tooling
+.idea/
+.vscode/
+
+# Build / artifacts
+artifacts/
+*.tar
+*.tar.gz
+*.zip
+
+# Playwright cache
+**/ms-playwright/
+
+# Logs /
+*.log
+
+
