@@ -127,7 +127,30 @@ docker run --rm \
   -e CC_BOT_TOKEN="..." \
   -e CC_CHAT_ID="..." \
   ccstudent8731/cc-login-bot:0.0.4 \
-  python -m src.cli --mode test
+  python -m src.cli --mode test --timezone Europe/Amsterdam
+```
+
+### **Mit benutzerdefinierten Zeiten**
+```bash
+# Start um 08:30 Uhr
+docker run --rm \
+  -e CC_USERNAME="..." \
+  -e CC_PASSWORD="..." \
+  -e CC_HOSTNAME="..." \
+  -e CC_BOT_TOKEN="..." \
+  -e CC_CHAT_ID="..." \
+  ccstudent8731/cc-login-bot:0.0.4 \
+  python -m src.cli --mode start --timezone Europe/Amsterdam --start-time 08:30 --end-time 17:00
+
+# Stop um 18:00 Uhr
+docker run --rm \
+  -e CC_USERNAME="..." \
+  -e CC_PASSWORD="..." \
+  -e CC_HOSTNAME="..." \
+  -e CC_BOT_TOKEN="..." \
+  -e CC_CHAT_ID="..." \
+  ccstudent8731/cc-login-bot:0.0.4 \
+  python -m src.cli --mode stop --timezone Europe/Amsterdam --start-time 08:30 --end-time 18:00
 ```
 
 ## ⏰ **Automatische Ausführung**
@@ -167,6 +190,13 @@ Der Bot kann automatisch zu bestimmten Zeiten die Zeiterfassung starten und been
 - **Umgebungsvariable**: `CC_TIMEZONE=Europe/Amsterdam`
 - **CLI-Parameter**: `--timezone Europe/Amsterdam`
 
+#### **⏰ Zeit-Konfiguration**
+- **Startzeit**: `--start-time 09:00` (Standard: 13:20)
+- **Endzeit**: `--end-time 17:30` (Standard: 17:30)
+- **Variation**: `--variation-minutes 2` (Standard: ±2 Minuten)
+- **Format**: `HH:MM` (24-Stunden-Format)
+- **Beispiele**: `09:00`, `13:30`, `17:00`, `18:30`
+
 #### **📅 Beispiel-Ablauf**
 ```
 Montag 09:02 Uhr → Bot startet Zeiterfassung (Kommen)
@@ -193,7 +223,7 @@ Donnerstag 09:01 Uhr → Bot startet Zeiterfassung (Kommen)
   -e CC_CHAT_ID="dein_chat_id" \
   -e CC_TIMEZONE="Europe/Amsterdam" \
   ccstudent8731/cc-login-bot:0.0.4 \
-  python -m src.cli --mode start --apply-variation --timezone Europe/Amsterdam
+  python -m src.cli --mode start --apply-variation --timezone Europe/Amsterdam --start-time 09:00 --end-time 17:30
 ```
 
 #### **Stop (Gehen) um 17:00 Uhr**
@@ -207,7 +237,7 @@ Donnerstag 09:01 Uhr → Bot startet Zeiterfassung (Kommen)
   -e CC_CHAT_ID="dein_chat_id" \
   -e CC_TIMEZONE="Europe/Amsterdam" \
   ccstudent8731/cc-login-bot:0.0.4 \
-  python -m src.cli --mode stop --apply-variation --timezone Europe/Amsterdam
+  python -m src.cli --mode stop --apply-variation --timezone Europe/Amsterdam --start-time 09:00 --end-time 17:30
 ```
 
 #### **Crontab installieren**
@@ -275,6 +305,7 @@ services:
 - ✅ **Zeitzonen-Unterstützung** - Vollständige Konfiguration für alle Zeitzonen
 - ✅ **Europe/Amsterdam** - Optimiert für niederländische Zeitzone
 - ✅ **CLI-Parameter** `--timezone` für flexible Zeitzonen-Konfiguration
+- ✅ **Zeit-Konfiguration** `--start-time` und `--end-time` für flexible Arbeitszeiten
 - ✅ **Docker-Integration** mit `CC_TIMEZONE` Umgebungsvariable
 - ✅ **Intelligente Zeitberechnung** mit korrekter Zeitzonen-Behandlung
 - ✅ Robuste dynamische ID-Behandlung für alle Portal-Elemente
