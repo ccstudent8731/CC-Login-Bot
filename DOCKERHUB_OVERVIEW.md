@@ -142,6 +142,7 @@ Der Bot kann automatisch zu bestimmten Zeiten die Zeiterfassung starten und been
 - **Variation**: ±2 Minuten Zufallsvariation zur Vermeidung von Bot-Erkennung
 - **Wochentage**: Montag bis Freitag (werktags)
 - **Feiertage**: Automatische Erkennung und Überspringen von Feiertagen
+- **Zeitzone**: Konfigurierbar (Standard: UTC)
 
 #### **🕔 Stop (Gehen) - Arbeitsende**
 - **Zeit**: Normalerweise um 17:00 Uhr (konfigurierbar)
@@ -149,12 +150,21 @@ Der Bot kann automatisch zu bestimmten Zeiten die Zeiterfassung starten und been
 - **Variation**: ±2 Minuten Zufallsvariation zur Vermeidung von Bot-Erkennung
 - **Wochentage**: Montag bis Freitag (werktags)
 - **Feiertage**: Automatische Erkennung und Überspringen von Feiertagen
+- **Zeitzone**: Konfigurierbar (Standard: UTC)
 
 #### **🧠 Intelligente Logik**
 - **Status-Prüfung**: Bot prüft vor jeder Aktion den aktuellen Status
 - **Keine Doppelbuchungen**: Wenn bereits "Kommen" gebucht ist, wird kein weiteres "Kommen" ausgeführt
 - **Feiertags-Erkennung**: Automatisches Überspringen an unterrichtsfreien Tagen
 - **Fehlerbehandlung**: Bei Fehlern wird eine Telegram-Benachrichtigung gesendet
+- **Zeitzonen-Unterstützung**: Korrekte Zeitberechnung in verschiedenen Zeitzonen
+
+#### **🌍 Zeitzonen-Konfiguration**
+- **Standard**: UTC (Universal Time Coordinated)
+- **Deutschland**: `Europe/Berlin` (CET/CEST)
+- **Andere Zeitzonen**: `America/New_York`, `Asia/Tokyo`, etc.
+- **Umgebungsvariable**: `CC_TIMEZONE=Europe/Berlin`
+- **CLI-Parameter**: `--timezone Europe/Berlin`
 
 #### **📅 Beispiel-Ablauf**
 ```
@@ -180,8 +190,9 @@ Donnerstag 09:01 Uhr → Bot startet Zeiterfassung (Kommen)
   -e CC_HOSTNAME="portal.cc-student.com" \
   -e CC_BOT_TOKEN="dein_bot_token" \
   -e CC_CHAT_ID="dein_chat_id" \
+  -e CC_TIMEZONE="Europe/Berlin" \
   ccstudent8731/cc-login-bot:0.0.3 \
-  python -m src.cli --mode start --apply-variation
+  python -m src.cli --mode start --apply-variation --timezone Europe/Berlin
 ```
 
 #### **Stop (Gehen) um 17:00 Uhr**
@@ -193,8 +204,9 @@ Donnerstag 09:01 Uhr → Bot startet Zeiterfassung (Kommen)
   -e CC_HOSTNAME="portal.cc-student.com" \
   -e CC_BOT_TOKEN="dein_bot_token" \
   -e CC_CHAT_ID="dein_chat_id" \
+  -e CC_TIMEZONE="Europe/Berlin" \
   ccstudent8731/cc-login-bot:0.0.3 \
-  python -m src.cli --mode stop --apply-variation
+  python -m src.cli --mode stop --apply-variation --timezone Europe/Berlin
 ```
 
 #### **Crontab installieren**
@@ -219,6 +231,7 @@ services:
       - CC_HOSTNAME=${CC_HOSTNAME}
       - CC_BOT_TOKEN=${CC_BOT_TOKEN}
       - CC_CHAT_ID=${CC_CHAT_ID}
+      - CC_TIMEZONE=Europe/Berlin
     volumes:
       - ./artifacts:/app/artifacts
     restart: unless-stopped
