@@ -37,13 +37,13 @@ Ein intelligenter Bot für die automatische Zeiterfassung im Comcave Student Por
 
 ## 🐳 **Docker Images**
 
-### **Latest Version: 0.0.3**
+### **Latest Version: 0.0.4**
 ```bash
 docker pull ccstudent8731/cc-login-bot:latest
 ```
 
 ### **Alle verfügbaren Tags**
-- `ccstudent8731/cc-login-bot:0.0.3` - Latest stable
+- `ccstudent8731/cc-login-bot:0.0.4` - Latest stable
 - `ccstudent8731/cc-login-bot:latest` - Latest stable
 
 
@@ -58,7 +58,7 @@ docker run -d \
   -e CC_HOSTNAME="portal.cc-student.com" \
   -e CC_BOT_TOKEN="dein_telegram_bot_token" \
   -e CC_CHAT_ID="dein_telegram_chat_id" \
-  ccstudent8731/cc-login-bot:0.0.3
+  ccstudent8731/cc-login-bot:0.0.4
 ```
 
 ### **2. Manuelle Ausführung**
@@ -69,7 +69,7 @@ docker run --rm \
   -e CC_HOSTNAME="portal.cc-student.com" \
   -e CC_BOT_TOKEN="dein_telegram_bot_token" \
   -e CC_CHAT_ID="dein_telegram_chat_id" \
-  ccstudent8731/cc-login-bot:0.0.3 \
+  ccstudent8731/cc-login-bot:0.0.4 \
   python -m src.cli --mode start
 ```
 
@@ -102,7 +102,7 @@ docker run --rm \
   -e CC_HOSTNAME="..." \
   -e CC_BOT_TOKEN="..." \
   -e CC_CHAT_ID="..." \
-  ccstudent8731/cc-login-bot:0.0.3 \
+  ccstudent8731/cc-login-bot:0.0.4 \
   python -m src.cli --mode start
 ```
 
@@ -114,7 +114,7 @@ docker run --rm \
   -e CC_HOSTNAME="..." \
   -e CC_BOT_TOKEN="..." \
   -e CC_CHAT_ID="..." \
-  ccstudent8731/cc-login-bot:0.0.3 \
+  ccstudent8731/cc-login-bot:0.0.4 \
   python -m src.cli --mode stop
 ```
 
@@ -126,7 +126,7 @@ docker run --rm \
   -e CC_HOSTNAME="..." \
   -e CC_BOT_TOKEN="..." \
   -e CC_CHAT_ID="..." \
-  ccstudent8731/cc-login-bot:0.0.3 \
+  ccstudent8731/cc-login-bot:0.0.4 \
   python -m src.cli --mode test
 ```
 
@@ -192,7 +192,7 @@ Donnerstag 09:01 Uhr → Bot startet Zeiterfassung (Kommen)
   -e CC_BOT_TOKEN="dein_bot_token" \
   -e CC_CHAT_ID="dein_chat_id" \
   -e CC_TIMEZONE="Europe/Amsterdam" \
-  ccstudent8731/cc-login-bot:0.0.3 \
+  ccstudent8731/cc-login-bot:0.0.4 \
   python -m src.cli --mode start --apply-variation --timezone Europe/Amsterdam
 ```
 
@@ -206,7 +206,7 @@ Donnerstag 09:01 Uhr → Bot startet Zeiterfassung (Kommen)
   -e CC_BOT_TOKEN="dein_bot_token" \
   -e CC_CHAT_ID="dein_chat_id" \
   -e CC_TIMEZONE="Europe/Amsterdam" \
-  ccstudent8731/cc-login-bot:0.0.3 \
+  ccstudent8731/cc-login-bot:0.0.4 \
   python -m src.cli --mode stop --apply-variation --timezone Europe/Amsterdam
 ```
 
@@ -225,7 +225,7 @@ crontab -e
 version: '3.8'
 services:
   cc-login-bot:
-    image: ccstudent8731/cc-login-bot:0.0.3
+    image: ccstudent8731/cc-login-bot:0.0.4
     environment:
       - CC_USERNAME=${CC_USERNAME}
       - CC_PASSWORD=${CC_PASSWORD}
@@ -271,7 +271,12 @@ services:
 
 ## 📈 **Changelog**
 
-### **Version 0.0.3** (Latest)
+### **Version 0.0.4** (Latest)
+- ✅ **Zeitzonen-Unterstützung** - Vollständige Konfiguration für alle Zeitzonen
+- ✅ **Europe/Amsterdam** - Optimiert für niederländische Zeitzone
+- ✅ **CLI-Parameter** `--timezone` für flexible Zeitzonen-Konfiguration
+- ✅ **Docker-Integration** mit `CC_TIMEZONE` Umgebungsvariable
+- ✅ **Intelligente Zeitberechnung** mit korrekter Zeitzonen-Behandlung
 - ✅ Robuste dynamische ID-Behandlung für alle Portal-Elemente
 - ✅ Intelligente Fallback-Mechanismen für Button-Erkennung
 - ✅ Vollständige Tests für Start (Kommen) und Stop (Gehen) Modi
