@@ -303,9 +303,59 @@ async def handle_time_tracking(page: Page, mode: str, base_url: str, timeout: fl
     logging.debug("Öffne Zeiterfassungsseite %s", time_url)
     await page.goto(time_url, timeout=timeout * 1000)
     await _human_scan(page)
-    status_locator = page.locator("#zeiterfassungdetailscontainer p")
-    await status_locator.wait_for(timeout=timeout * 1000)
-    status_text = (await status_locator.inner_text()).strip()
+    
+    # Prüfe ob "Zeiterfassung öffnen" Button vorhanden ist
+    open_button_selectors = [
+        "input[value*='Zeiterfassung öffnen']",
+        "button[value*='Zeiterfassung öffnen']", 
+        "input[value*='öffnen']",
+        "button[value*='öffnen']",
+        "input[id*='open']",
+        "button[id*='open']"
+    ]
+    
+    open_button = None
+    for selector in open_button_selectors:
+        try:
+            button = page.locator(selector).first
+            if await button.count() > 0:
+                open_button = button
+                logging.info(f"Zeiterfassung öffnen Button gefunden: {selector}")
+                break
+        except:
+            continue
+    
+    if open_button:
+        logging.info("Klicke auf 'Zeiterfassung öffnen'")
+        await _human_click(page, open_button)
+        await _human_pause(1000, 2000)  # Warten bis Dialog geladen ist
+    else:
+        logging.info("Kein 'Zeiterfassung öffnen' Button gefunden - versuche direkt Status zu lesen")
+    
+    # Versuche verschiedene Status-Selektoren
+    status_selectors = [
+        "#zeiterfassungdetailscontainer p",
+        ".zeiterfassung p",
+        "#status p",
+        "p"
+    ]
+    
+    status_text = ""
+    for selector in status_selectors:
+        try:
+            status_locator = page.locator(selector)
+            if await status_locator.count() > 0:
+                status_text = (await status_locator.first.inner_text()).strip()
+                if status_text and ("Kommen" in status_text or "Gehen" in status_text):
+                    logging.info(f"Status gefunden mit Selektor {selector}: {status_text}")
+                    break
+        except:
+            continue
+    
+    if not status_text:
+        logging.warning("Kein Status gefunden - verwende Fallback")
+        status_text = "Status unbekannt"
+    
     logging.debug("Aktueller Status: %s", status_text)
 
     mode = mode.lower()
@@ -328,8 +378,50 @@ async def handle_time_tracking(page: Page, mode: str, base_url: str, timeout: fl
         raise StatusError(f"Unbekannter Status: {status_text}")
 
     await _open_dialog(page, timeout)
-    button_selector = "#btnkommengehenbutton_eaf7e30aad"
-    button_locator = page.locator(button_selector)
+    
+    # Versuche verschiedene Selektoren für den Kommen/Gehen Button
+    action_button_selectors = [
+        "input[id*='btnkommengehenbutton']",
+        "button[id*='btnkommengehenbutton']",
+        "input[id*='kommengehen']",
+        "button[id*='kommengehen']",
+        "input[value*='Kommen']",
+        "button[value*='Kommen']",
+        "input[value*='Gehen']",
+        "button[value*='Gehen']"
+    ]
+    
+    button_locator = None
+    for selector in action_button_selectors:
+        try:
+            button = page.locator(selector).first
+            if await button.count() > 0:
+                button_locator = button
+                logging.info(f"Kommen/Gehen Button gefunden: {selector}")
+                break
+        except:
+            continue
+    
+    if not button_locator:
+        # Fallback: Suche nach allen Buttons im Dialog
+        dialog_buttons = page.locator("#kugDialog input, #kugDialog button")
+        count = await dialog_buttons.count()
+        logging.info(f"Suche Kommen/Gehen Button unter {count} Dialog-Buttons")
+        for i in range(count):
+            element = dialog_buttons.nth(i)
+            element_value = await element.evaluate("el => el.value")
+            element_text = await element.evaluate("el => el.textContent")
+            logging.info(f"Dialog-Button {i}: value='{element_value}' text='{element_text}'")
+            
+            if ('kommen' in (element_value or '').lower()) or ('gehen' in (element_value or '').lower()) or \
+               ('kommen' in (element_text or '').lower()) or ('gehen' in (element_text or '').lower()):
+                button_locator = element
+                logging.info(f"Kommen/Gehen Button als Fallback gefunden: {element_value}")
+                break
+    
+    if not button_locator:
+        raise StatusError("Kommen/Gehen Button nicht gefunden")
+    
     button_text = await button_locator.input_value()
     logging.debug("Dialogbutton zeigt aktuell: %s", button_text)
 
@@ -351,7 +443,49 @@ async def handle_time_tracking(page: Page, mode: str, base_url: str, timeout: fl
 
 async def _open_dialog(page: Page, timeout: float) -> None:
     logging.debug("Öffne Zeiterfassungsdialog")
-    trigger = page.locator("#btnshowDialogButton_093b5b0ac6")
+    
+    # Versuche verschiedene Selektoren für den Dialog-Button
+    dialog_selectors = [
+        "input[id*='btnshowDialogButton']",
+        "button[id*='btnshowDialogButton']",
+        "input[value*='Zeiterfassung öffnen']",
+        "button[value*='Zeiterfassung öffnen']",
+        "input[value*='öffnen']",
+        "button[value*='öffnen']",
+        "input[id*='showDialog']",
+        "button[id*='showDialog']"
+    ]
+    
+    trigger = None
+    for selector in dialog_selectors:
+        try:
+            button = page.locator(selector).first
+            if await button.count() > 0:
+                trigger = button
+                logging.info(f"Dialog-Button gefunden: {selector}")
+                break
+        except:
+            continue
+    
+    if not trigger:
+        # Fallback: Suche nach allen möglichen Buttons
+        all_buttons = page.locator("input, button")
+        count = await all_buttons.count()
+        logging.info(f"Suche Dialog-Button unter {count} Buttons")
+        for i in range(count):
+            element = all_buttons.nth(i)
+            element_value = await element.evaluate("el => el.value")
+            element_text = await element.evaluate("el => el.textContent")
+            logging.info(f"Button {i}: value='{element_value}' text='{element_text}'")
+            
+            if ('öffnen' in (element_value or '').lower()) or ('öffnen' in (element_text or '').lower()):
+                trigger = element
+                logging.info(f"Dialog-Button als Fallback gefunden: {element_value}")
+                break
+    
+    if not trigger:
+        raise StatusError("Dialog-Button nicht gefunden")
+    
     await trigger.wait_for(timeout=timeout * 1000)
     await _human_click(page, trigger)
     await page.locator("#kugDialog form").wait_for(timeout=timeout * 1000)
