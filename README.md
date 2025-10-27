@@ -1,5 +1,4 @@
-<<<<<<< HEAD
-## CC Login Bot
+# CC Login Bot
 
 Automates daily check-in/out on the CC portal using Playwright. The bot logs in, checks the current attendance status, presses the required button, captures a screenshot, and notifies a Telegram chat. A cron-driven Docker container adds time variation, supports a test mode, and skips CC-free days detected on the course overview.
 
@@ -8,8 +7,9 @@ Automates daily check-in/out on the CC portal using Playwright. The bot logs in,
 - Unsure which hostname to use? See the community hints at: https://pastebin.com/search?q=bot+hostname+cc
 
 ### Build or Pull
-- Build locally: `docker build -t cc-login-bot .`
-- Or pull from Docker Hub after it is published: `docker pull <your-dockerhub-user>/cc-login-bot`
+- Build locally: `docker build -t cc-login-bot:0.0.1 .`
+- Pull from Docker Hub: `docker pull ccstudent8731/cc-login-bot:0.0.1`
+- Latest tag (automated build): `docker pull ccstudent8731/cc-login-bot:latest`
 
 ### Run Example (Docker)
 ```bash
@@ -19,7 +19,7 @@ docker run -d --name cc-bot \
   -e CC_BOT_TOKEN=<TELEGRAM_BOT_TOKEN> \
   -e CC_CHAT_ID=<CHAT_ID> \
   -e CC_HOSTNAME=<PORTAL_HOST> \
-  cc-login-bot
+  ccstudent8731/cc-login-bot:latest
 ```
 
 ### Run Example (Manual Test)
@@ -42,7 +42,3 @@ python -m src.cli \
 
 ### License
 This project is released under the MIT License. See `LICENSE` for details.
-=======
-# Comcave-Login-Bot
-Automates daily check-in/out on the Comcave CC portal with Playwright. Logs in, inspects the current status, triggers the correct Kommen/Gehen action, captures a screenshot, and sends a Telegram update. Dockerized with cron scheduling, ±time variation, optional test mode, and Sunday holiday detection from the course overview.
->>>>>>> origin/main
