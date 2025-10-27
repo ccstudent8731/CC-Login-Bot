@@ -38,25 +38,47 @@ async def fetch_holidays(page: Page, base_url: str, timeout: float = 30.0) -> li
 
     for index in range(count):
         row = rows.nth(index)
+        
+        # Debug: Zeige alle Zeilen-Inhalte
+        try:
+            row_text = await row.inner_text()
+            logging.debug(f"Zeile {index}: {row_text[:100]}...")
+        except:
+            logging.debug(f"Zeile {index}: Fehler beim Lesen")
+            continue
+            
         title_locator = row.locator("td.bold").first
         if not await title_locator.count():
-            continue
+            # Versuche alternative Selektoren
+            title_locator = row.locator("td").first
+            if not await title_locator.count():
+                continue
+                
         title = (await title_locator.inner_text()).strip()
-        if "Unterrichtsfreie Zeit" not in title:
+        logging.debug(f"Zeile {index} Titel: '{title}'")
+        
+        if "Unterrichtsfreie Zeit" not in title and "unterrichtsfrei" not in title.lower():
             continue
 
         cols = row.locator("td")
-        if await cols.count() < 4:
+        col_count = await cols.count()
+        logging.debug(f"Zeile {index} hat {col_count} Spalten")
+        
+        if col_count < 4:
+            logging.warning(f"Zeile {index} hat zu wenige Spalten: {col_count}")
             continue
 
         start_raw = (await cols.nth(2).inner_text()).strip()
         end_raw = (await cols.nth(3).inner_text()).strip()
+        
+        logging.debug(f"Zeile {index} Daten: '{start_raw}' - '{end_raw}'")
 
         try:
             start = dt.datetime.strptime(start_raw, "%d.%m.%Y").date()
             end = dt.datetime.strptime(end_raw, "%d.%m.%Y").date()
-        except ValueError:
-            logging.warning("Konnte Datum nicht parsen: %s - %s", start_raw, end_raw)
+            logging.info(f"Freier Zeitraum gefunden: {start} - {end}")
+        except ValueError as e:
+            logging.warning("Konnte Datum nicht parsen: %s - %s (Fehler: %s)", start_raw, end_raw, e)
             continue
 
         holiday_ranges.append(HolidayRange(start=start, end=end))
@@ -65,17 +87,66 @@ async def fetch_holidays(page: Page, base_url: str, timeout: float = 30.0) -> li
     return holiday_ranges
 
 
-def trim_to_window(
-    holidays: Iterable[HolidayRange], window_start: dt.date, window_end: dt.date
-) -> list[HolidayRange]:
-    trimmed: list[HolidayRange] = []
+def should_refresh_holidays(cache_path: Path) -> bool:
+    """Prüft ob die Feiertage-Cache erneuert werden muss (alle 30 Tage)."""
+    if not cache_path.exists():
+        return True
+    
+    # Prüfe das Alter der Cache-Datei
+    cache_age = dt.datetime.now() - dt.datetime.fromtimestamp(cache_path.stat().st_mtime)
+    return cache_age.days >= 30
+
+
+def filter_future_holidays(holidays: Iterable[HolidayRange]) -> list[HolidayRange]:
+    """Filtert nur zukünftige Feiertage heraus."""
+    today = dt.date.today()
+    future_holidays = []
+    
     for holiday in holidays:
-        if holiday.end < window_start or holiday.start > window_end:
-            continue
-        start = max(holiday.start, window_start)
-        end = min(holiday.end, window_end)
-        trimmed.append(HolidayRange(start=start, end=end))
-    return trimmed
+        # Nur Feiertage die heute oder in der Zukunft liegen
+        if holiday.end >= today:
+            future_holidays.append(holiday)
+    
+    return future_holidays
+
+
+async def get_holidays_with_cache(page: Page, base_url: str, cache_path: Path, timeout: float = 30.0) -> list[HolidayRange]:
+    """Lädt Feiertage mit intelligenter Cache-Logik."""
+    
+    # Prüfe ob Cache erneuert werden muss
+    if not should_refresh_holidays(cache_path):
+        logging.info("Verwende gecachte Feiertage (Cache ist noch aktuell)")
+        return load_holiday_ranges(cache_path)
+    
+    logging.info("Cache ist veraltet oder nicht vorhanden - lade Feiertage neu")
+    
+    # Lade neue Feiertage vom Portal
+    all_holidays = await fetch_holidays(page, base_url, timeout)
+    
+    # Filtere nur zukünftige Feiertage
+    future_holidays = filter_future_holidays(all_holidays)
+    
+    logging.info(f"Gefunden: {len(all_holidays)} Feiertage total, {len(future_holidays)} zukünftige")
+    
+    # Speichere nur zukünftige Feiertage im Cache
+    save_holidays(cache_path, future_holidays)
+    
+    return future_holidays
+
+
+def load_holiday_ranges(path: Path) -> list[HolidayRange]:
+    """Lädt Feiertage aus der Cache-Datei."""
+    if not path.exists():
+        return []
+    
+    content = json.loads(path.read_text(encoding="utf-8"))
+    holidays = []
+    for entry in content:
+        start = dt.datetime.strptime(entry["start"], "%Y-%m-%d").date()
+        end = dt.datetime.strptime(entry["end"], "%Y-%m-%d").date()
+        holidays.append(HolidayRange(start=start, end=end))
+    
+    return holidays
 
 
 def save_holidays(path: Path, holidays: Iterable[HolidayRange]) -> None:

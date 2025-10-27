@@ -120,7 +120,10 @@ async def send_telegram_report(
         else:
             await bot.send_message(chat_id=telegram_cfg.chat_id, text=message)
     finally:
-        await bot.close()
+        try:
+            await bot.close()
+        except Exception as e:
+            logging.warning(f"Fehler beim Schließen des Telegram-Bots: {e}")
 
 
 def _parse_time(timestr: str) -> dt.time:

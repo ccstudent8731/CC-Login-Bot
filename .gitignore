@@ -23,4 +23,8 @@ artifacts/
 # Logs /
 *.log
 
+# Test-Konfiguration (enthält sensible Daten)
+test_config.env
 
+# Cache und Artefakte
+artifacts/

@@ -56,8 +56,6 @@ def load_holiday_dates(path: Path) -> set[dt.date]:
     return dates
 """Kernautomation für das Portal via Playwright."""
 
-from __future__ import annotations
-
 import asyncio
 import contextlib
 import datetime as dt
@@ -198,8 +196,20 @@ async def run_bot(config: RunConfig) -> str:
             base_url = _require_base_url(config.base_url)
             await login_portal(page, config.credentials, base_url, config.timeout)
             status_text = await handle_time_tracking(page, config.mode, base_url, config.timeout)
-            await holidays.fetch_holidays(page, base_url)
+            
+            # Screenshot auf der Zeiterfassungsseite erstellen
             await _capture_status_screenshot(page, config.screenshot_path)
+            
+            # Lade Feiertage mit intelligenter Cache-Logik
+            cache_path = Path("artifacts/holidays_cache.json")
+            holidays_list = await holidays.get_holidays_with_cache(page, base_url, cache_path, config.timeout)
+            
+            # Erweitere Feiertage zu einzelnen Tagen für die Prüfung
+            holiday_dates = set()
+            for holiday_range in holidays_list:
+                holiday_dates.update(holiday_range.expand())
+            
+            logging.info(f"Verfügbare Feiertage: {len(holiday_dates)} Tage")
             return status_text
         finally:
             await browser.close()
@@ -208,12 +218,70 @@ async def run_bot(config: RunConfig) -> str:
 async def login_portal(page: Page, credentials: Credentials, base_url: str, timeout: float) -> None:
     login_url = f"{base_url.rstrip('/')}/{LOGIN_PATH}"
     logging.debug("Navigiere zur Login-Seite %s", login_url)
+    logging.info(f"Navigiere zu Login-Seite: {login_url}")
     await page.goto(login_url, timeout=timeout * 1000)
     await _human_scan(page)
 
+    logging.info("Suche Login-Elemente...")
     username_input = page.locator("#login_username")
     password_input = page.locator("#login_passwort")
-    login_button = page.locator("input#btnlogin_submit_a2af993863")
+    # Versuche verschiedene Login-Button-Selektoren
+    login_button = None
+    selectors = [
+        "input[type='submit']",
+        "button[type='submit']", 
+        "input[value*='Login']",
+        "input[value*='Anmelden']",
+        "input[id*='btnlogin']",
+        "input[id*='submit']",
+        "button[id*='login']",
+        "button[id*='submit']"
+    ]
+    
+    for selector in selectors:
+        try:
+            button = page.locator(selector).first
+            if await button.count() > 0:
+                login_button = button
+                logging.info(f"Login-Button gefunden mit Selektor: {selector}")
+                break
+        except:
+            continue
+    
+    if not login_button:
+        # Fallback: Suche nach allen möglichen Submit-Elementen
+        all_buttons = page.locator("input, button")
+        count = await all_buttons.count()
+        logging.info(f"Gefundene Buttons/Inputs: {count}")
+        for i in range(count):
+            element = all_buttons.nth(i)
+            tag_name = await element.evaluate("el => el.tagName")
+            element_type = await element.evaluate("el => el.type")
+            element_id = await element.evaluate("el => el.id")
+            element_value = await element.evaluate("el => el.value")
+            logging.info(f"Element {i}: {tag_name} type={element_type} id={element_id} value={element_value}")
+            
+            if (tag_name.lower() == 'input' and element_type == 'submit') or \
+               (tag_name.lower() == 'button' and element_type == 'submit') or \
+               ('login' in (element_id or '').lower()) or \
+               ('submit' in (element_id or '').lower()):
+                login_button = element
+                logging.info(f"Login-Button als Fallback gefunden: {tag_name} id={element_id}")
+                break
+
+    # Prüfe ob Elemente gefunden wurden
+    username_count = await username_input.count()
+    password_count = await password_input.count()
+    login_count = 1 if login_button else 0
+    
+    logging.info(f"Gefundene Elemente - Username: {username_count}, Password: {password_count}, Login-Button: {login_count}")
+    
+    if username_count == 0:
+        raise LoginError("Username-Eingabefeld nicht gefunden")
+    if password_count == 0:
+        raise LoginError("Password-Eingabefeld nicht gefunden")
+    if login_count == 0:
+        raise LoginError("Login-Button nicht gefunden")
 
     await _human_type(page, username_input, credentials.username)
     await _human_pause(160, 320)
@@ -292,10 +360,12 @@ async def _open_dialog(page: Page, timeout: float) -> None:
 
 async def _capture_status_screenshot(page: Page, path: Path) -> None:
     logging.debug("Erstelle Screenshot am Pfad %s", path)
-    locator = page.locator("#zeiterfassungdetailscontainer")
-    await locator.wait_for()
+    
     path.parent.mkdir(parents=True, exist_ok=True)
-    await locator.screenshot(path=path)
+    
+    # Screenshot der gesamten Seite (full page)
+    await page.screenshot(path=path, full_page=True)
+    logging.info("Screenshot der gesamten Seite erstellt")
 
 
 async def run_with_timeout(config: RunConfig, max_duration: float = 90.0) -> str:

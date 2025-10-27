@@ -7,14 +7,18 @@ if ! playwright show-browsers 2>/dev/null | grep -q chromium; then
 fi
 
 echo "[*] Führe initialen Testlauf aus"
-if ! python -m src.cli \
+echo "[*] Teste Login-Funktionalität..."
+if python -m src.cli \
   --username "${CC_USERNAME:?Umgebungsvariable CC_USERNAME fehlt}" \
   --password "${CC_PASSWORD:?Umgebungsvariable CC_PASSWORD fehlt}" \
   --bot-token "${CC_BOT_TOKEN:?Umgebungsvariable CC_BOT_TOKEN fehlt}" \
   --chat-id "${CC_CHAT_ID:?Umgebungsvariable CC_CHAT_ID fehlt}" \
   --host "${CC_HOSTNAME:?Umgebungsvariable CC_HOSTNAME fehlt}" \
   --mode test; then
-  echo "[!] Initialer Testlauf fehlgeschlagen" >&2
+  echo "[✓] Login-Test erfolgreich - Bot ist bereit!"
+else
+  echo "[✗] Login-Test fehlgeschlagen - Bot wird trotzdem gestartet" >&2
+  echo "[!] Bitte überprüfe deine Credentials und Hostname-Einstellungen" >&2
 fi
 
 echo "[*] Initialisiere Cronjob-Datei"
